@@ -716,11 +716,235 @@ scala> val v = new SomeClass(9)v: SomeClass = SomeClass@9scala> v.twice()res5
 
 ## Programmation fonctionnelle
 
+### Les fonctions en tant que variables
+
+En scala il est possible d'assigner des fonctions à des variables
+
+```scala
+val doubler = (i: Int) => { i * 2 }
+```
+### Les fonctions en tant que paramètres
+
+Il est également possible de passer des fonctions en tant qu'argument de méthodes.
+
+```scala
+def operation(functionparam:(Int, Int) => Int) {	println(functionparam(4,4))}
+val add = (x: Int, y:Int) => { x + y }
+val subtract = (x: Int, y:Int) => { x - y }val multiply = (x: Int, y:Int) => { x*y }
+
+scala> operation(add)8
+scala> operation(subtract)0
+scala> operation(multiply)16
+```
+
+### Les fonctions en tant que valeur de retour
+
+Les blocs de code peuvent retourner des fonctions en guise de valeur de retour, simplement en déclarant une fonction anonyme : 
+
+```scala
+def greeting() = (name: String) => {"hello" + " " + name}
+
+scala> val greet= greeting()greet: String => String = <function1>
+scala> greet("Reader")res26: String = hello Reader
+```
+
+### Closures
+Les closures sont des fonctions dont la valeur de retour dépend de la valeur d'une ou plusieurs variables déclarées à l'extérieur de la fonction.
+
+Considérons la fonction suivante :
+
+```scala
+val multiplier = (x:Int) => x * 3
+```
+
+Maintenant pour en faire une closure il est possible de l'écrire ainsi : 
+
+```scala
+val y = 3
+val multiplier = (x:Int) => x * y
+```
+La variable y est intégrée dans le scope de la fonction par le compilateur créant ainsi une closure.
+
+### Fonctions "partiellement appliquées" (Partially Applied Functions)
+En programmation fonctionnelle, lorsque tous les arguments d'une fonctions sont passées, la fonction est dite *"appliquée totalement"*.
+
+Exemple
+
+```scala
+val add = (x: Int, y: Int) => x + y
+
+scala> add(1,2)res01: Int = 3
+```
+
+Lorsque seuls certains paramètres sont appliqués, la fonction est dite *"partiellement appliquée"*.
+
+```scala
+val partiallyAdd = add(1, _:Int)
+
+scala> partiallyAdd(2)res02: Int = 3
+```
+
+### Curryfication
+
+En programmation fonctionnelle, la curryfication (currying) consiste à transformer une fonction avec plusieurs paramètres en une chaine de fonctions dites *pures*, où chacune de ces fonctions ne prend qu'un seul paramètre.
+
+Le nom de *currying* vient du mathématicien américain [Haskell Curry](https://fr.wikipedia.org/wiki/Haskell_Curry).
+
+Prenons par exemple la méthode suivante :
+
+```scala
+val add = (x: Int, y: Int) => x + y
+
+scala> add(3,3)res38: Int = 6
+```
+
+En scala, la version *curry-fiée* serait la suivante :
+
+```scala
+def curriedAdd(x: Int)(y: Int) = x + y
+// équivalent à 
+def curriedAdd(x: Int) = (y: Int) => x + y
+
+scala> curriedAdd(2)(2)res1: Int = 4
+```
+
+__NOTE :__ Il est tout à fait possible de *curryfier* des fonctions de plus de deux paramètres.
+
+## Pattern Matching
+Le pattern matching en programmation fonctionnelle est un moyen concis et facilement maintenable de déclarer la logique métier d'un programme. Le côté multi-paradigme de scala lui permet de concilier de manière très efficace le pattern matching traditionnel de la programmation fonctionnelle et son système objet notamment les *case classes*.
+
+### Pattern matching de base
+
+Le pattern matching permet de faire un choix programmatique entre plusieurs conditions.
+En scala, les *cases* peuvent devenir très sophistiqués, contenir des types, des wildcards, des séquences, des regex, etc. C'est cette puissance qui en fait un des outils incontournables de la programmation scala. 
+
+Exemple 1 :
+
+```scala
+def printNum(int: Int) {	int match {		case 0 => println("Zero")		case 1 => println("One")		case _ => println("more than one")	}}
+
+scala> printNum(0)Zeroscala> printNum(1)Onescala> printNum(2)more than one
+```
+L'opérateur `_` est équivalent à l'opérateur `default` en Java et de la même manière il est important de le mettre en dernier sans quoi les autres cases ne seront pas évalués.
+
+Il est possible de coupler le pattern matching avec la récursivité.
+
+Exemple 2 : La suite de Fibonacci en Scala :
+
+```scala
+def fibonacci(in: Int): Int = in match {	case 0 => 0	case 1 => 1	case n => fibonacci(n - 1) + fibonacci(n - 2)}
+```
+
+Il est possible d'avoir plusieurs tests sur une seule ligne 
+
+```scala
+def fibonacci(in: Int): Int = in match {	case 0 | -1 | -2 => 0	case 1 => 1	case n => fibonacci(n - 1) + fibonacci(n - 2)}
+```
+
+Il est également possibe de rajouter des *guards* sur les cases clauses : 
+
+```scala
+def fibonacci(in: Int): Int = in match {	case n if n <= 0 => 0	case 1 => 1	case n => fibonacci(n - 1) + fibonacci(n - 2)}
+```
+
+### Le matching de type
+
+Prenons l'exemple d'une liste composée de valeurs de n'importe quel type :
+
+```scala
+val anyList= List(1, "A", 2, 2.5, 'a')
+
+scala> for (m <- anyList) {	m match {		case i: Int => println("Integer: " + i)		case s: String => println("String: " + s)		case f: Double => println("Double: " + f)		case other => println("other: " + other)	}}
+Integer: 1String: AInteger: 2Double: 2.5other: a
+```
+
+### Pattern Matching & Case Classes
+
+```scala
+case class Person(name: String, age: Int, valid: Boolean)
+
+def older(p: Person): Option[String] = p match {	case Person(name, age, true) if age > 35 => Some(name)	case _ => None}
+
+scala> val p = Person("David", 45, true)
+scala> older(p)
+res4: Option[String] = Some(David)
+```
+
+On peut également faire du pattern matching imbriqué
+
+```scala
+
+case class MarriedPerson(override val name: String, 
+	override val age: Int,	
+	override val valid: Boolean, 
+	spouse: Person) extends Person(name, age, valid)
+
+def mOlder(p: Person): Option[String] = p match {	case Person(name, age, true) if age > 35 => Some(name)	case MarriedPerson(name, _, _, Person(_, age, true)) if age > 35 => Some(name)	case _ => None}
+```
+
+### Pattern Matching en tant que fonction
+Les patterns scala sont des éléments de la syntaxe Scala quand ils sont utilisés avec l'opérateur `match`. Scala compile une expression `match` en `PartialFunction[A,B]`. Il est donc possible de passer un pattern à n'importe quelle méthode qui prend un seul paramètre. 
+
+Cela nous permet de réécrire le code suivant :
+
+```scala
+list.filter(a => a match {	case s: String => true	case _ => false})
+```
+en
+
+```scala
+list.filter {	case s: String => true	case _ => false}
+```
+
+## Les Collections
+
+### La hiérarchie de collections en Scala
+
+La plupart des collections utiles sont réparties dans 3 packages, `scala.collection`, `scala.collection.immutable`, and `scala.collection.mutable`. 
+
+#### scala.collection
+Ce package contient toutes les abstractions de haut niveau, classes ou traits, qui ont soit des implémentations mutables ou immutables.
+
+![](http://www.scala-lang.org/docu/files/collections-api/collections.png)
+
+##### Sequences
+Les séquences stockent les éléments dans un ordre spécifique. Il est donc possible d'accéder aux éléments de manière séquentielle depuis le premier ou le dernier ou bien encore par un accès direct via l'index.
+
+Par défaut, une invocation à la méthode `Seq` en scala va créer une `List` immutable. 
+
+```scala
+scala> val x = Seq(1,2,3)x: Seq[Int] = List(1, 2, 3)
+```
+
+##### Sets
+##### Maps
 
 
+#### scala.collection.immutable
+
+![](http://www.scala-lang.org/docu/files/collections-api/collections.immutable.png)
+##### Immutable Sequences
+Immutable Seq
+![](http://puu.sh/iRIri/addfd77045.png =600x)
+
+##### Immutable Sets
+Immutable Set
+![](http://puu.sh/iRIsr/54ad5a6fb2.png =600x)
 
 
-## Collections
+##### Immutable Maps
+
+Immutable Map
+![](http://puu.sh/iRIHQ/a3beb8197d.png =600x)
+
+#### scala.collection.mutable
+
+
+![](http://www.scala-lang.org/docu/files/collections-api/collections.mutable.png)
+
+
+Mutable Seq
+![](http://puu.sh/iRILJ/f63a94da5e.png =600x)
 
 
 ## Gestion des erreurs
